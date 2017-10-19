@@ -24,8 +24,6 @@ char buf[BUF_SIZE];
 
 struct sigaction sigact;
 
-pthread_mutex_t mutx;
-
 int main(int argc, char* argv[])
 {
 	int serv_sock_r; // Readable server socket

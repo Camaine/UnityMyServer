@@ -60,12 +60,12 @@ int main(int argc, char* argv[])
 	memset(&serv_addr_r, 0, sizeof(serv_addr_r));
 	serv_addr_r.sin_family = AF_INET;
 	serv_addr_r.sin_addr.s_addr= htonl(INADDR_ANY);
-	serv_addr_r.sin_port = htons(6000);
+	serv_addr_r.sin_port = htons(6003);
 
 	memset(&serv_addr_w, 0, sizeof(serv_addr_w));
 	serv_addr_w.sin_family = AF_INET;
 	serv_addr_w.sin_addr.s_addr= htonl(INADDR_ANY);
-	serv_addr_w.sin_port = htons(6001);
+	serv_addr_w.sin_port = htons(6004);
 
 
 	if(bind(serv_sock_r, (struct sockaddr*)&serv_addr_r, sizeof(serv_addr_r)) == -1)
@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
 		clnt_socks[clnt_no++][1] = clnt_sock_w; // allocate writable socket
 		pthread_mutex_unlock(&mutx);
 	
-		printf("%dth client, IP : %s\n", clnt_no, inet_ntoa(clnt_addr_r.sin_addr));
+		printf("game %dth client, IP : %s\n", clnt_no, inet_ntoa(clnt_addr_r.sin_addr));
 	}
 
 	return 0;
@@ -110,12 +110,12 @@ void *clnt_connection(void *arg)
 {
 	int clnt_sock_r = (int)arg;
 	int str_len = 0;
-	char msg[5];
+	char msg[64];
 	int i;
 	
-	while((str_len = read(clnt_sock_r, msg, 1)) != 0){ // if socket get message, send this to other socket
+	while((str_len = read(clnt_sock_r, msg, 5)) != 0){ // if socket get message, send this to other socket
+		str_len = strlen(msg);
 		send_msg(msg, str_len);
-		sleep(1);
 	}
 	
 	pthread_mutex_lock(&mutx);
@@ -140,21 +140,10 @@ void send_msg(char *msg, int len)
 	pthread_mutex_lock(&mutx);
 	
 	for(i = 0 ; i < clnt_no ; i++){
-		if(matched == 0 && clnt_no <= 2){ // if client number less than 2, send client this form("<Client No.><Role>")
-			memset(msg, 0, strlen(msg));
-			msg[0] = 48+i;
-			msg[1] = ',';
-			msg[2] = 48+clnt_no;
-			msg[3] = 0;
-		} // else send client "OK"
-		write(clnt_socks[i][1], msg, 4);
-		printf("%d %s\n",i, msg);
-		if(i == 1 && msg[0] == 2){ //  if client number is 1, check matched
-			matched = 2;
-		}
-		if(matched > 0){ // if match started, initialize matched variable
-			matched = 0;
-		}
+		if(msg[0] != i+48){
+			write(clnt_socks[i][1], msg, 5);
+		}	
+		printf("2nd %d %s / %c\n",i, msg, msg[0]);
 	}
 	pthread_mutex_unlock(&mutx);
 }

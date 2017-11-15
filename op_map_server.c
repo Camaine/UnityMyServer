@@ -21,9 +21,10 @@ void signal_handler(int signo);
 
 int clnt_no = 0;
 int clnt_socks[10][2];
-int matched = 0;
+int send_check = 0;
 int defender_selected = 0;
 int role[10];
+char msgq[50][8];
 
 struct sigaction sigact;
 
@@ -110,12 +111,14 @@ void *clnt_connection(void *arg)
 {
 	int clnt_sock_r = (int)arg;
 	int str_len = 0;
+	int qlen = 0;
 	char msg[64];
 	int i;
 	
 	while((str_len = read(clnt_sock_r, msg, 9)) != 0){ // if socket get message, send this to other socket
 		str_len = strlen(msg);
-		send_msg(msg, str_len);
+		strcpy(msgq[qlen++], msg);
+		send_msg(msgq[--qlen], str_len);
 	}
 	
 	pthread_mutex_lock(&mutx);
@@ -137,13 +140,23 @@ void *clnt_connection(void *arg)
 void send_msg(char *msg, int len)
 {
 	int i;
+	int j = 0;
 	pthread_mutex_lock(&mutx);
 	
 	for(i = 0 ; i < clnt_no ; i++){
-		if(msg[0] == i+48){
+		if(i == 0 && msg[0] == '6' && send_check == 0){
+			printf("first 6");
+			send_check = 1;
+			j = 1;
+		}
+		else if(i == 0){
 			write(clnt_socks[i][1], msg, 9);
+			printf("<sent> : ");
+		}
+		if(i == 0 && send_check == 1 && msg[0] == '6' && j == 0){
+			send_check = 0;
 		}	
-		printf("3rd %d %s / %c\n",i, msg, msg[0]);
+		printf("3rd %d %s / %c / %d\n",i, msg, msg[0], send_check);
 	}
 	pthread_mutex_unlock(&mutx);
 }
@@ -157,5 +170,5 @@ void error_handling(char * msg)
 
 void signal_handling(int signo)
 {
-	
+
 }

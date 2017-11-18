@@ -34,15 +34,14 @@ const char *dbname = "record";
 
 MYSQL *connection = NULL;
 MYSQL conn;
-MYSQL_RES *sql_reult;
+MYSQL_RES *sql_result;
 MYSQL_ROW sql_row;  
 
 struct sigaction sigact;
 
 pthread_mutex_t mutx;
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]){
 	int serv_sock_r; // Readable server socket
 	int serv_sock_w; // Writable server socket
 	int clnt_sock_r; // Readable client socket
@@ -137,10 +136,10 @@ void *clnt_connection(void *arg)
 {
 	int clnt_sock_r = (int)arg;
 	int str_len = 0;
-	char msg[128];
+	char msg[256];
 	int i;
 	
-	while((str_len = read(clnt_sock_r, msg, 128)) != 0){ // if socket get message, send this to other socket
+	while((str_len = read(clnt_sock_r, msg, 256)) != 0){ // if socket get message, send this to other socket
 		if(mysql_query(connection, msg)){
 			printf("failed query : %s\n", msg);
 			error_handling("mysql query failed");
@@ -148,7 +147,7 @@ void *clnt_connection(void *arg)
 			printf("query : %s\n", msg);
 		}
 		str_len = strlen(msg);
-		//send_msg(msg, str_len);
+		send_msg(msg, str_len);
 		sleep(1);
 	}
 	
@@ -171,19 +170,46 @@ void *clnt_connection(void *arg)
 void send_msg(char *msg, int len)
 {
 	int i;
-	char query[64];
+	int field;
+	char game_type[1];
+	char query[128];
+	char *query1 = "SELECT username, foodpoint FROM rank WHERE game_type=";
+	char *query2 = " ORDER BY foodpoint DESC;";
+	char temp[8];
+	char result[32];
+
+	query[0] = 0;
+	strcpy(temp,strrchr(msg,'='));
+	game_type[0] = temp[2];
+	game_type[1] = 0;
+	strcat(strcat(strcat(query, query1), game_type), query2);
+
 	pthread_mutex_lock(&mutx);
-	
-	for(i = 0 ; i < clnt_no ; i++){
-		write(clnt_socks[i][1], msg, 4);
-		printf("%d %s\n",i, msg);
-		if(i == 1 && msg[0] == 2){ //  if client number is 1, check matched
-			matched = 2;
-		}
-		if(matched > 0){ // if match started, initialize matched variable
-			matched = 0;
+
+	if(mysql_query(connection, query)){
+		printf("faild query : %s\n", query);
+		error_handling("select mysql query failed");
+	}
+
+	sql_result = mysql_store_result(connection);
+	if(sql_result == NULL){
+		error_handling("select data store error");
+	}
+
+	field = mysql_num_fields(sql_result);
+
+	while((sql_row = mysql_fetch_row(sql_result))){
+		for(int j = 0 ; j < field ; j++){
+			strcpy(result, sql_row[j]);
+			printf("query_result : %s\n", result);
+			//write(clnt_socks[i][1], msg, 4);a
+			result[0] = 0;
 		}
 	}
+	query[0] =0;
+	temp[0] = 0;
+	game_type[0] = 0;
+	sql_result = NULL;
 	pthread_mutex_unlock(&mutx);
 }
 

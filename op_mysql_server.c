@@ -171,12 +171,15 @@ void send_msg(char *msg, int len)
 {
 	int i;
 	int field;
+	int msglen;
 	char game_type[1];
 	char query[128];
 	char *query1 = "SELECT username, foodpoint FROM rank WHERE game_type=";
 	char *query2 = " ORDER BY foodpoint DESC;";
 	char temp[8];
 	char result[32];
+	char sendmsg[128];
+	char comma = ',';
 
 	query[0] = 0;
 	strcpy(temp,strrchr(msg,'='));
@@ -198,14 +201,31 @@ void send_msg(char *msg, int len)
 
 	field = mysql_num_fields(sql_result);
 
+	sendmsg[0] = 0;
+
 	while((sql_row = mysql_fetch_row(sql_result))){
 		for(int j = 0 ; j < field ; j++){
 			strcpy(result, sql_row[j]);
 			printf("query_result : %s\n", result);
-			//write(clnt_socks[i][1], msg, 4);a
+			strcat(strcat(sendmsg,result), &comma);
 			result[0] = 0;
 		}
+		msglen = strlen(sendmsg);
+		if(write(clnt_socks[1][1], sendmsg, msglen-2) < 0){
+			error_handling("write socket error");
+		}else{
+			printf("test : \"%s\" %d \n",sendmsg, msglen);
+		}
+		sendmsg[0] = 0;
 	}
+	sendmsg[0] = '9';
+	sendmsg[1] = 0;
+	if(write(clnt_socks[0][1], sendmsg, 2) < 0){
+		error_handling("write 2 socket error");
+	}else{
+		printf("test : \"%s\"\n",sendmsg);
+	}
+	sendmsg[0] = 0; 
 	query[0] =0;
 	temp[0] = 0;
 	game_type[0] = 0;

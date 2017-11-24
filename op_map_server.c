@@ -112,13 +112,12 @@ void *clnt_connection(void *arg)
 	int clnt_sock_r = (int)arg;
 	int str_len = 0;
 	int qlen = 0;
-	char msg[64];
+	char msg[513];
 	int i;
 	
-	while((str_len = read(clnt_sock_r, msg, 9)) != 0){ // if socket get message, send this to other socket
+	while((str_len = read(clnt_sock_r, msg, 512)) != 0){ // if socket get message, send this to other socket
 		str_len = strlen(msg);
-		strcpy(msgq[qlen++], msg);
-		send_msg(msgq[--qlen], str_len);
+		send_msg(msg, str_len);
 	}
 	
 	pthread_mutex_lock(&mutx);
@@ -150,7 +149,7 @@ void send_msg(char *msg, int len)
 			j = 1;
 		}
 		else if(i == 0){
-			write(clnt_socks[i][1], msg, 9);
+			write(clnt_socks[i][1], msg, len);
 			printf("<sent> : ");
 		}
 		if(i == 0 && send_check == 1 && msg[0] == '6' && j == 0){

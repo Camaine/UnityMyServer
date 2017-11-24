@@ -220,11 +220,14 @@ void send_msg(char *msg, int len)
 		finish[1] = 0;
 		strcat(sendmsg,finish);
 		if(write(clnt_socks[1][1], sendmsg, strlen(sendmsg)) < 0){
-			error_handling("write 2 socket error");
+			if(write(clnt_socks[0][1], sendmsg, strlen(sendmsg))<0){
+				error_handling("write 2 socket error");
+			}else{
+				printf("test : \"%s\"\n",sendmsg);
+			}
 		}else{
 			printf("test : \"%s\"\n",sendmsg);
 		}
-		write(clnt_socks[0][1], sendmsg, strlen(sendmsg));
 
 	}else{
 		printf("false\n");

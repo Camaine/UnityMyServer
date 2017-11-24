@@ -178,8 +178,9 @@ void send_msg(char *msg, int len)
 	char *query2 = " ORDER BY foodpoint DESC;";
 	char temp[8];
 	char result[32];
-	char sendmsg[128];
-	char comma = ',';
+	char sendmsg[256];
+	char comma[1];
+	char finish[1];
 
 	query[0] = 0;
 	strcpy(temp,strrchr(msg,'='));
@@ -188,6 +189,8 @@ void send_msg(char *msg, int len)
 	strcat(strcat(strcat(query, query1), game_type), query2);
 
 	pthread_mutex_lock(&mutx);
+	comma[0] = ',';
+	comma[1] = 0;
 
 	if(mysql_query(connection, query)){
 		printf("faild query : %s\n", query);
@@ -207,23 +210,24 @@ void send_msg(char *msg, int len)
 		for(int j = 0 ; j < field ; j++){
 			strcpy(result, sql_row[j]);
 			printf("query_result : %s\n", result);
-			strcat(strcat(sendmsg,result), &comma);
+			strcat(strcat(sendmsg,result), comma);
 			result[0] = 0;
 		}
-		msglen = strlen(sendmsg);
-		if(write(clnt_socks[1][1], sendmsg, msglen-2) < 0){
-			error_handling("write socket error");
-		}else{
-			printf("test : \"%s\" %d \n",sendmsg, msglen);
-		}
-		sendmsg[0] = 0;
 	}
-	sendmsg[0] = '9';
-	sendmsg[1] = 0;
-	if(write(clnt_socks[0][1], sendmsg, 2) < 0){
-		error_handling("write 2 socket error");
+	if(!sql_row){
+		printf("true\n");
+		finish[0] = 'f';
+		finish[1] = 0;
+		strcat(sendmsg,finish);
+		if(write(clnt_socks[1][1], sendmsg, strlen(sendmsg)) < 0){
+			error_handling("write 2 socket error");
+		}else{
+			printf("test : \"%s\"\n",sendmsg);
+		}
+		write(clnt_socks[0][1], sendmsg, strlen(sendmsg));
+
 	}else{
-		printf("test : \"%s\"\n",sendmsg);
+		printf("false\n");
 	}
 	sendmsg[0] = 0; 
 	query[0] =0;

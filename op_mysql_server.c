@@ -174,6 +174,7 @@ void send_msg(char *msg, int len)
 	int msglen;
 	char game_type[1];
 	char query[128];
+	char *query3 = "SELECT username, foodpoint FROM rank1 WHERE game_type=";
 	char *query1 = "SELECT username, foodpoint FROM rank WHERE game_type=";
 	char *query2 = " ORDER BY foodpoint DESC;";
 	char temp[8];
@@ -186,7 +187,11 @@ void send_msg(char *msg, int len)
 	strcpy(temp,strrchr(msg,'='));
 	game_type[0] = temp[2];
 	game_type[1] = 0;
-	strcat(strcat(strcat(query, query1), game_type), query2);
+	if(temp[2] == '0'){
+		strcat(strcat(strcat(query, query1), game_type), query2);
+	}else{
+		strcat(strcat(strcat(query, query3), game_type), query2);
+	}
 
 	pthread_mutex_lock(&mutx);
 	comma[0] = ',';
@@ -220,13 +225,14 @@ void send_msg(char *msg, int len)
 		finish[1] = 0;
 		strcat(sendmsg,finish);
 		if(write(clnt_socks[1][1], sendmsg, strlen(sendmsg)) < 0){
-			if(write(clnt_socks[0][1], sendmsg, strlen(sendmsg))<0){
-				error_handling("write 2 socket error");
-			}else{
-				printf("test : \"%s\"\n",sendmsg);
-			}
+			error_handling("write 1 socket error");
 		}else{
-			printf("test : \"%s\"\n",sendmsg);
+			printf("test1 : \"%s\"\n",sendmsg);
+		}
+		if(write(clnt_socks[0][1], sendmsg, strlen(sendmsg))<0){
+			error_handling("write 2 socket error");
+		}else{
+			printf("test2 : \"%s\"\n",sendmsg);
 		}
 
 	}else{

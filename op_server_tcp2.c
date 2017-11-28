@@ -143,7 +143,7 @@ void send_msg(char *msg, int len)
 		if(msg[0] != i+48){
 			write(clnt_socks[i][1], msg, 5);
 		}	
-		printf("2nd %d %s / %c\n",i, msg, msg[0]);
+		//printf("2nd %d %s / %c\n",i, msg, msg[0]);
 	}
 	pthread_mutex_unlock(&mutx);
 }
